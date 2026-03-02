@@ -324,7 +324,11 @@ function buildContentPack(
 ): string {
   const metricPattern =
     /(\d+\s*[%xX倍]?|star|follower|lead|ctr|conversion|线索|关注|流量|点击|转化|新增)/i;
-  const strategicPoints = keyPoints.filter((point) => !metricPattern.test(point));
+  const strategicPoints = keyPoints
+    .map((point) => point.replace(/`/g, '').trim())
+    .filter((point) => !metricPattern.test(point))
+    .filter((point) => !/^(首发渠道|外部分发)/.test(point))
+    .filter((point) => !/^(positioning|content|distribution|analytics)\b/i.test(point));
 
   const issue =
     strategicPoints[0] ||
