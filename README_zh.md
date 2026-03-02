@@ -1,3 +1,5 @@
+> **Fork 说明（IPClaw）：** 本分支在完整兼容 NanoClaw 核心能力的前提下，以扩展方式新增个人 IP 增长模块。参见 `docs/IPCLAW_COMPATIBILITY_CHECKLIST.md`、`docs/IPCLAW_MVP_ROADMAP.md`、`docs/IPCLAW_MUSK_5STEP_EXECUTION.md` 与 `docs/IPCLAW_COMMANDS.md`。
+
 <p align="center">
   <img src="assets/nanoclaw-logo.png" alt="NanoClaw" width="400">
 </p>

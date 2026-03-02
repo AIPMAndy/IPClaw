@@ -1,3 +1,5 @@
+> **Fork Notice (IPClaw):** This fork keeps NanoClaw core functionality fully compatible and adds personal-IP growth modules as additive extensions. See `docs/IPCLAW_COMPATIBILITY_CHECKLIST.md`, `docs/IPCLAW_MVP_ROADMAP.md`, `docs/IPCLAW_MUSK_5STEP_EXECUTION.md`, and `docs/IPCLAW_COMMANDS.md`.
+
 <p align="center">
   <img src="assets/nanoclaw-logo.png" alt="NanoClaw" width="400">
 </p>
