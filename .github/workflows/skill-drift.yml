@@ -47,15 +47,25 @@ jobs:
     if: needs.validate.outputs.drifted == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Check GitHub App secrets
+        id: auth-mode
+        run: |
+          if [ -n "${{ secrets.APP_ID }}" ] && [ -n "${{ secrets.APP_PRIVATE_KEY }}" ]; then
+            echo "mode=app" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=default" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/create-github-app-token@v1
         id: app-token
+        if: steps.auth-mode.outputs.mode == 'app'
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - uses: actions/checkout@v4
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.auth-mode.outputs.mode == 'app' && steps.app-token.outputs.token || github.token }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -73,7 +83,7 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.auth-mode.outputs.mode == 'app' && steps.app-token.outputs.token || github.token }}
           branch: ci/fix-skill-drift
           delete-branch: true
           title: 'fix(skills): auto-update drifted skills'
