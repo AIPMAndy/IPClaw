@@ -23,20 +23,42 @@ IPClaw 目标是把一次构建过程变成可复用增长闭环：
 
 ---
 
-## 快速开始
+## 运行前准备
+
+- Node.js `>=20`（`node -v`）
+- 完整运行 NanoClaw 需要一个容器运行时：
+  - Docker（`docker info`）
+  - Apple Container（`container --help`）
+- 如果你只使用 `/ip-run` 生成运营包，可先不装容器运行时
+
+---
+
+## 快速开始（两条路径）
+
+### 路径 A：仅生成 IP 运营包（无需容器）
 
 ```bash
 git clone https://github.com/AIPMAndy/IPClaw.git
 cd IPClaw
 npm install
-claude
+npm run ip:run -- \
+  --creator "Andy" \
+  --niche "个人IP自动化" \
+  --audience "独立开发者"
 ```
 
-然后执行：
+### 路径 B：运行完整 NanoClaw（需要容器运行时）
 
-- `/ip-run`：生成每周 IP 运营包
+```bash
+git clone https://github.com/AIPMAndy/IPClaw.git
+cd IPClaw
+npm install
+npm run setup
+```
 
-如果你是第一次本地初始化运行环境，再执行一次 `/setup` 即可。
+`npm run setup` 会先做环境检查，并打印下一步要执行的命令。
+
+完成 setup 后，启动 `claude` 并执行 `/ip-run`。
 
 ---
 

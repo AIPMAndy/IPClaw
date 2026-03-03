@@ -3,6 +3,7 @@
  * Usage: npx tsx setup/index.ts --step <name> [args...]
  */
 import { logger } from '../src/logger.js';
+import { commandExists } from './platform.js';
 import { emitStatus } from './status.js';
 
 const STEPS: Record<
@@ -19,15 +20,56 @@ const STEPS: Record<
   verify: () => import('./verify.js'),
 };
 
+function detectPreferredRuntime(): 'apple-container' | 'docker' | null {
+  if (commandExists('container')) {
+    return 'apple-container';
+  }
+  if (commandExists('docker')) {
+    return 'docker';
+  }
+  return null;
+}
+
+async function runGuidedSetup(): Promise<void> {
+  console.log(
+    'No --step provided. Running quick environment check and showing next actions.\n',
+  );
+
+  try {
+    const environment = await STEPS.environment();
+    await environment.run([]);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.warn({ err }, 'Quick environment check failed');
+    console.warn(`[WARN] Environment check skipped: ${message}`);
+  }
+
+  const runtime = detectPreferredRuntime();
+
+  console.log('\nQuick setup guide:');
+  if (runtime) {
+    console.log(
+      `1) Prepare container runtime: npm run setup -- --step container --runtime ${runtime}`,
+    );
+  } else {
+    console.log('1) Install and start a container runtime (Docker or Apple Container).');
+    console.log(
+      '   Then run: npm run setup -- --step container --runtime <docker|apple-container>',
+    );
+  }
+  console.log('2) Authenticate channel: npm run setup -- --step whatsapp-auth');
+  console.log('3) Configure groups: npm run setup -- --step groups');
+  console.log('4) Register groups: npm run setup -- --step register');
+  console.log('5) Verify readiness: npm run setup -- --step verify\n');
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const stepIdx = args.indexOf('--step');
 
   if (stepIdx === -1 || !args[stepIdx + 1]) {
-    console.error(
-      `Usage: npx tsx setup/index.ts --step <${Object.keys(STEPS).join('|')}> [args...]`,
-    );
-    process.exit(1);
+    await runGuidedSetup();
+    return;
   }
 
   const stepName = args[stepIdx + 1];

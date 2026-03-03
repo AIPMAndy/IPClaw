@@ -33,20 +33,42 @@ This is built for people who want **operating system**, not just prompts.
 
 ---
 
-## Quick Start
+## Prerequisites
+
+- Node.js `>=20` (`node -v`)
+- For full NanoClaw runtime: one container runtime
+  - Docker (`docker info`)
+  - Apple Container (`container --help`)
+- If you only use `/ip-run`, container runtime is optional
+
+---
+
+## Quick Start (Two Paths)
+
+### Path A: Generate IP pack only (no container runtime)
 
 ```bash
 git clone https://github.com/AIPMAndy/IPClaw.git
 cd IPClaw
 npm install
-claude
+npm run ip:run -- \
+  --creator "Andy" \
+  --niche "Personal IP automation" \
+  --audience "Indie developers"
 ```
 
-Then run:
+### Path B: Run full NanoClaw runtime (requires container runtime)
 
-- `/ip-run` to generate your weekly IP operation pack
+```bash
+git clone https://github.com/AIPMAndy/IPClaw.git
+cd IPClaw
+npm install
+npm run setup
+```
 
-If this is your first local runtime setup, run `/setup` once.
+`npm run setup` now runs an environment check and prints the exact next commands.
+
+After setup, start `claude` and run `/ip-run`.
 
 ---
 
