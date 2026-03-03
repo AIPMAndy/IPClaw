@@ -13,12 +13,12 @@ It helps you move from “I posted something” to “I run a measurable growth 
 
 Most AI tools stop at copywriting.
 
-IPClaw gives you a full execution loop:
+IPClaw gives you a focused execution loop:
 
 1. **Positioning** — who you help and what result you create
-2. **Content** — convert one build log into multi-format assets
-3. **Distribution** — channel plan with approval-first publishing
-4. **Review** — weekly KPI snapshot + keep/drop/double-down decisions
+2. **Persona** — define pain points, triggers, and trust signals
+3. **Topic Plan** — generate high-quality P1/P2/P3 topic backlog
+4. **7-Day Cadence** — publish fast, collect feedback, iterate
 
 This is built for people who want **operating system**, not just prompts.
 
@@ -27,8 +27,8 @@ This is built for people who want **operating system**, not just prompts.
 ## What You Get Today
 
 - `/ip-run` workflow pack generator (auto-filled drafts)
-- Positioning / content / distribution / KPI templates
-- Approval-first distribution checklist (safer for real accounts)
+- Positioning / persona / topic templates
+- Topic-first publishing cadence with channel suggestions
 - Container-isolated runtime and task orchestration
 
 ---
@@ -60,6 +60,8 @@ npm run ip:run -- \
   --source docs/IPCLAW_MUSK_5STEP_EXECUTION.md \
   --repo "https://github.com/AIPMAndy/IPClaw" \
   --channels github,x,wechat \
+  --focus "growth loop,template reuse,case breakdown" \
+  --topics 20 \
   --goal "Get first 20 seed users" \
   --lang zh
 ```
@@ -67,9 +69,8 @@ npm run ip:run -- \
 Output folder:
 
 - `plans/ipclaw-runs/<timestamp>/01-positioning.md`
-- `plans/ipclaw-runs/<timestamp>/02-content-pack.md`
-- `plans/ipclaw-runs/<timestamp>/03-distribution.md`
-- `plans/ipclaw-runs/<timestamp>/04-weekly-review.md`
+- `plans/ipclaw-runs/<timestamp>/02-persona.md`
+- `plans/ipclaw-runs/<timestamp>/03-topic-ideas.md`
 
 See full options in `docs/IPCLAW_COMMANDS.md`.
 
@@ -89,9 +90,7 @@ See full options in `docs/IPCLAW_COMMANDS.md`.
 ### IP Growth Layer
 
 - `extensions/ipclaw/positioning/`
-- `extensions/ipclaw/content/`
-- `extensions/ipclaw/distribution/`
-- `extensions/ipclaw/analytics/`
+- `scripts/ipclaw-run.ts` (positioning → persona → topic planning)
 - `templates/ipclaw/`
 
 ### Strategy & Playbooks
@@ -107,7 +106,7 @@ See full options in `docs/IPCLAW_COMMANDS.md`.
 
 - Keep all external publishing **human-approved by default**
 - Keep changes additive and measurable
-- Keep weekly iteration based on KPI evidence
+- Keep weekly iteration based on topic performance evidence
 
 ---
 
@@ -117,8 +116,8 @@ Current high-impact contribution areas:
 
 1. Better output quality for `/ip-run`
 2. More reusable templates and real case examples
-3. KPI instrumentation and weekly automation
-4. Distribution adapters for more channels (approval-first)
+3. Topic validation instrumentation and weekly automation
+4. Better topic adapters for more channels
 
 If this project is useful, please star it and share your use case in Issues or Discussions.
 

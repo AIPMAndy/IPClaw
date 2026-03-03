@@ -18,16 +18,15 @@ This folder contains additive modules for personal-IP growth while preserving Na
 ## Execution Flow (MVP)
 
 1. `positioning/` 生成定位与内容支柱。
-2. `content/` 把长内容改写为发布资产。
-3. `distribution/` 生成渠道适配与审批清单。
-4. `analytics/` 输出周报与下一步动作。
+2. 基于 source 自动提炼主人设（痛点、触发点、信任信号）。
+3. 生成优质选题池（P1/P2/P3）。
+4. 生成 7 天发布节奏建议。
 
 ## Template Assets
 
 - `templates/ipclaw/positioning-prompt.md`
-- `templates/ipclaw/content-repurpose.md`
-- `templates/ipclaw/distribution-checklist.md`
-- `templates/ipclaw/weekly-kpi-review.md`
+- `templates/ipclaw/persona-canvas.md`
+- `templates/ipclaw/topic-ideas.md`
 
 ## Command Skeleton
 

@@ -7,9 +7,8 @@
 IPClaw 目标是把一次构建过程变成可复用增长闭环：
 
 - 定位
-- 内容生产
-- 分发执行
-- KPI 复盘迭代
+- 人设
+- 优质选题
 
 ---
 
@@ -18,9 +17,9 @@ IPClaw 目标是把一次构建过程变成可复用增长闭环：
 多数工具止步于“帮你写内容”。IPClaw 更关注执行闭环：
 
 1. 明确定位（你服务谁，带来什么结果）
-2. 从真实构建日志产出可发布内容资产
-3. 用审批优先 + 追踪链接做分发
-4. 每周按数据做 keep / drop / double-down
+2. 抽取主人设（痛点、触发点、信任信号）
+3. 生成高质量选题池（P1/P2/P3 优先级）
+4. 用 7 天发布节奏快速验证反馈
 
 ---
 
@@ -46,9 +45,8 @@ claude
 `/ip-run` 会一次生成：
 
 - 定位卡
-- 内容包
-- 分发审批卡
-- 周 KPI 复盘卡
+- 人设卡
+- 优质选题包
 
 CLI 示例：
 
@@ -60,6 +58,8 @@ npm run ip:run -- \
   --source docs/IPCLAW_MUSK_5STEP_EXECUTION.md \
   --repo "https://github.com/AIPMAndy/IPClaw" \
   --channels github,x \
+  --focus "增长飞轮,模板复用,案例拆解" \
+  --topics 20 \
   --lang zh
 ```
 
@@ -72,9 +72,7 @@ npm run ip:run -- \
 ### IP 增长层
 
 - `extensions/ipclaw/positioning/`
-- `extensions/ipclaw/content/`
-- `extensions/ipclaw/distribution/`
-- `extensions/ipclaw/analytics/`
+- `scripts/ipclaw-run.ts`（定位→人设→选题）
 
 模板资产在：`templates/ipclaw/`。
 
@@ -102,9 +100,9 @@ npm run ip:run -- \
 
 当前阶段优先欢迎：
 
-1. 提升定位/内容/分发/复盘输出质量
+1. 提升定位/人设/选题输出质量
 2. 增加高复用模板与案例
-3. 补强 KPI 埋点与周报自动化
+3. 补强选题验证与反馈闭环自动化
 
 请保持加法式改动，不破坏运行时基线能力。
 
