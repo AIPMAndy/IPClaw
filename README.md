@@ -1,26 +1,35 @@
 # IPClaw
 
-> Open-source personal-IP growth operating system for creators.
+**English** | [中文](README_zh.md)
 
-IPClaw helps creators turn one build cycle into a repeatable growth loop:
+> Turn one weekly build log into a repeatable personal-brand growth loop.
 
-- positioning
-- content production
-- distribution planning
-- KPI review and iteration
-
-IPClaw keeps compatibility with NanoClaw runtime capabilities while focusing product experience on personal brand growth.
+IPClaw is an open-source AI workflow for creators, indie builders, and public thinkers.
+It helps you move from “I posted something” to “I run a measurable growth system”.
 
 ---
 
-## Why IPClaw
+## Why IPClaw Is Different
 
-Most tools stop at “content generation”. IPClaw is designed for execution:
+Most AI tools stop at copywriting.
 
-1. Define clear positioning (who you help + what result you create)
-2. Generate reusable content assets from real build logs
-3. Distribute with approval-first workflow and tracking links
-4. Review data weekly and decide keep / drop / double-down
+IPClaw gives you a full execution loop:
+
+1. **Positioning** — who you help and what result you create
+2. **Content** — convert one build log into multi-format assets
+3. **Distribution** — channel plan with approval-first publishing
+4. **Review** — weekly KPI snapshot + keep/drop/double-down decisions
+
+This is built for people who want **operating system**, not just prompts.
+
+---
+
+## What You Get Today
+
+- `/ip-run` workflow pack generator (auto-filled drafts)
+- Positioning / content / distribution / KPI templates
+- Approval-first distribution checklist (safer for real accounts)
+- Container-isolated runtime and task orchestration
 
 ---
 
@@ -35,38 +44,47 @@ claude
 
 Then run:
 
-- `/setup` for environment and channel initialization
 - `/ip-run` to generate your weekly IP operation pack
+
+If this is your first local runtime setup, run `/setup` once.
 
 ---
 
-## `/ip-run` (MVP)
-
-IPClaw includes a runnable skeleton command that generates:
-
-- positioning card
-- content pack
-- distribution checklist
-- weekly KPI review
-
-CLI usage:
+## `/ip-run` in 30 seconds
 
 ```bash
 npm run ip:run -- \
   --creator "Andy" \
   --niche "Personal IP automation" \
-  --audience "indie developers" \
+  --audience "Indie developers" \
   --source docs/IPCLAW_MUSK_5STEP_EXECUTION.md \
   --repo "https://github.com/AIPMAndy/IPClaw" \
-  --channels github,x \
+  --channels github,x,wechat \
+  --goal "Get first 20 seed users" \
   --lang zh
 ```
 
-See `docs/IPCLAW_COMMANDS.md` for full options.
+Output folder:
+
+- `plans/ipclaw-runs/<timestamp>/01-positioning.md`
+- `plans/ipclaw-runs/<timestamp>/02-content-pack.md`
+- `plans/ipclaw-runs/<timestamp>/03-distribution.md`
+- `plans/ipclaw-runs/<timestamp>/04-weekly-review.md`
+
+See full options in `docs/IPCLAW_COMMANDS.md`.
 
 ---
 
-## Core Capabilities
+## Who It Is For
+
+- Indie developers doing build-in-public
+- Technical creators building personal brand with GitHub as the hub
+- Consultants/coaches who need repeatable content-to-lead workflows
+- Small creator teams that want AI-assisted operations with human approval
+
+---
+
+## Repository Map
 
 ### IP Growth Layer
 
@@ -74,40 +92,35 @@ See `docs/IPCLAW_COMMANDS.md` for full options.
 - `extensions/ipclaw/content/`
 - `extensions/ipclaw/distribution/`
 - `extensions/ipclaw/analytics/`
+- `templates/ipclaw/`
 
-Reusable templates live in `templates/ipclaw/`.
-
-### Runtime Layer (Compatibility Baseline)
-
-- containerized agent execution
-- isolated group context (`groups/*/CLAUDE.md`)
-- scheduler and recurring tasks
-- IPC tool bridge
-- SQLite persistence
-
-Compatibility and release gates:
-
-- `docs/IPCLAW_COMPATIBILITY_CHECKLIST.md`
-
----
-
-## Product Docs
+### Strategy & Playbooks
 
 - `docs/IPCLAW_MVP_ROADMAP.md`
 - `docs/IPCLAW_MUSK_5STEP_EXECUTION.md`
+- `docs/IPCLAW_COMPATIBILITY_CHECKLIST.md`
 - `docs/IPCLAW_COMMANDS.md`
 
 ---
 
-## Contribution
+## Safety & Operating Principle
 
-Priority contributions for this stage:
+- Keep all external publishing **human-approved by default**
+- Keep changes additive and measurable
+- Keep weekly iteration based on KPI evidence
 
-1. Better IP output quality (positioning/content/distribution/review)
-2. More reusable templates and case-based examples
-3. KPI instrumentation and weekly review automation
+---
 
-Please keep changes additive and avoid breaking baseline runtime behavior.
+## Contributing
+
+Current high-impact contribution areas:
+
+1. Better output quality for `/ip-run`
+2. More reusable templates and real case examples
+3. KPI instrumentation and weekly automation
+4. Distribution adapters for more channels (approval-first)
+
+If this project is useful, please star it and share your use case in Issues or Discussions.
 
 ---
 
