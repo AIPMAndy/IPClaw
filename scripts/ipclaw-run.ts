@@ -13,6 +13,8 @@ interface CliOptions {
   lang: 'zh' | 'en';
   goal?: string;
   sourcePath?: string;
+  caseInput?: string;
+  caseFilePath?: string;
   outputDir?: string;
 }
 
@@ -35,6 +37,13 @@ interface TopicQuota {
   p1: number;
   p2: number;
   p3: number;
+}
+
+interface CaseBrief {
+  summary: string;
+  problem: string;
+  action: string;
+  result: string;
 }
 
 function getArg(name: string): string | undefined {
@@ -71,7 +80,7 @@ function parseArgs(): CliOptions {
 
   if (!creator || !niche || !audience) {
     console.error(
-      'Usage: npm run ip:run -- --creator "<name>" --niche "<niche>" --audience "<audience>" [--source <file>] [--repo <url>] [--cta <text>] [--channels github,x] [--focus 增长飞轮,模板复用] [--topics <count>] [--goal <text>] [--lang zh|en] [--out <dir>]',
+      'Usage: npm run ip:run -- --creator "<name>" --niche "<niche>" --audience "<audience>" [--source <file>] [--case "<text>"] [--case-file <file>] [--repo <url>] [--cta <text>] [--channels github,x] [--focus 增长飞轮,模板复用] [--topics <count>] [--goal <text>] [--lang zh|en] [--out <dir>]',
     );
     process.exit(1);
   }
@@ -97,6 +106,18 @@ function parseArgs(): CliOptions {
     process.exit(1);
   }
 
+  const caseInput = getArg('case');
+  if (caseInput && caseInput.length > 600) {
+    console.error('Case text is too long. Keep it within 600 characters.');
+    process.exit(1);
+  }
+
+  const caseFilePath = getArg('case-file');
+  if (caseFilePath && !fs.existsSync(caseFilePath)) {
+    console.error(`Case file not found: ${caseFilePath}`);
+    process.exit(1);
+  }
+
   return {
     creator,
     niche,
@@ -109,6 +130,8 @@ function parseArgs(): CliOptions {
     lang,
     goal,
     sourcePath,
+    caseInput,
+    caseFilePath,
     outputDir: getArg('out'),
   };
 }
@@ -313,10 +336,79 @@ function resolveTopicQuota(total: number): TopicQuota {
   return { p1, p2, p3 };
 }
 
+function normalizeCaseText(raw: string): string {
+  return raw
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\n')
+    .trim();
+}
+
+function stripCasePrefix(line: string): string {
+  return line
+    .replace(/^(问题|挑战|痛点|problem|pain)[：:\-\s]*/i, '')
+    .replace(/^(动作|做法|方案|执行|action|approach|solution)[：:\-\s]*/i, '')
+    .replace(/^(结果|数据|收益|result|outcome|impact)[：:\-\s]*/i, '')
+    .trim();
+}
+
+function parseCaseBrief(
+  caseText: string,
+  keyPoints: string[],
+  lang: 'zh' | 'en',
+): CaseBrief | undefined {
+  const normalized = normalizeCaseText(caseText);
+  if (!normalized) return undefined;
+
+  const lines = dedupe(
+    normalized
+      .split(/[\n；;]+/)
+      .map((line) => line.trim())
+      .map((line) => line.replace(/^[-*+]\s+/, '').trim())
+      .filter((line) => line.length >= 6),
+  );
+
+  if (lines.length === 0) return undefined;
+
+  const findLine = (patterns: RegExp[]): string | undefined =>
+    lines.find((line) => patterns.some((pattern) => pattern.test(line)));
+
+  const problemLine =
+    findLine([/^(问题|挑战|痛点|problem|pain)/i]) ||
+    findLine([/(问题|挑战|痛点|卡在|难点|problem|pain|stuck)/i]) ||
+    lines[0];
+  const actionLine =
+    findLine([/^(动作|做法|方案|执行|action|approach|solution)/i]) ||
+    findLine([/(动作|做法|方案|执行|尝试|用了|action|approach|solution|implemented)/i]) ||
+    lines[Math.min(1, lines.length - 1)];
+  const resultLine =
+    findLine([/^(结果|数据|收益|result|outcome|impact)/i]) ||
+    findLine([/(提升|增长|降低|转化率|star|click|lead|result|outcome|impact|%|\d+)/i]) ||
+    keyPoints.find((point) => isMetricPoint(point)) ||
+    lines[Math.min(2, lines.length - 1)];
+
+  const summary = stripCasePrefix(lines[0]);
+  const problem = stripCasePrefix(problemLine || lines[0]);
+  const action = stripCasePrefix(actionLine || lines[Math.min(1, lines.length - 1)]);
+  const result = stripCasePrefix(
+    resultLine ||
+      textByLang(
+        lang,
+        '结果还在验证中，本周补充一组前后对比。',
+        'Result still validating. Add one measurable before/after this week.',
+      ),
+  );
+
+  return { summary, problem, action, result };
+}
+
 function buildPositioningCard(
   options: CliOptions,
   keyPoints: string[],
   templatePath: string,
+  caseBrief?: CaseBrief,
 ): string {
   const insights = extractInsights(keyPoints, 6);
   const proofPoints = extractProofPoints(keyPoints, options.lang, 3);
@@ -383,6 +475,16 @@ ${differentiation}
 
 ${evidence}
 
+${caseBrief
+    ? `## ${textByLang(options.lang, '案例锚点', 'Case Anchor')}
+
+- ${textByLang(options.lang, '问题', 'Problem')}：${caseBrief.problem}
+- ${textByLang(options.lang, '动作', 'Action')}：${caseBrief.action}
+- ${textByLang(options.lang, '结果', 'Result')}：${caseBrief.result}
+
+`
+    : ''}
+
 ## CTA
 
 ${options.cta}
@@ -410,21 +512,25 @@ function buildPersonaCard(
   options: CliOptions,
   keyPoints: string[],
   templatePath: string,
+  caseBrief?: CaseBrief,
 ): string {
   const insights = extractInsights(keyPoints, 6);
   const painPoints = [
-    insights[0] || textByLang(options.lang, `很难持续做出高质量${options.niche}内容`, `Hard to sustain high-quality ${options.niche} content`),
+    caseBrief?.problem || insights[0] || textByLang(options.lang, `很难持续做出高质量${options.niche}内容`, `Hard to sustain high-quality ${options.niche} content`),
     insights[1] || textByLang(options.lang, '有输出但缺少明确结构与人设一致性', 'Outputs exist but lack a clear structure and persona consistency'),
     insights[2] || textByLang(options.lang, '不知道哪些选题能带来有效互动与转化', 'Unclear which topics can create engagement and conversion'),
   ];
 
   const goalText = options.goal || textByLang(options.lang, '每周稳定产出并发布 2-3 条高质量内容', 'Publish 2-3 high-quality pieces every week');
 
-  const trustSignals = [
-    textByLang(options.lang, '可验证的真实构建过程', 'Verifiable real build process'),
+  const trustSignals = dedupe([
+    caseBrief
+      ? textByLang(options.lang, `真实案例结果：${caseBrief.result}`, `Real case evidence: ${caseBrief.result}`)
+      : textByLang(options.lang, '可验证的真实构建过程', 'Verifiable real build process'),
     textByLang(options.lang, '可复制的模板与步骤', 'Reusable templates and steps'),
     textByLang(options.lang, '清晰边界：不夸大承诺', 'Clear boundaries: no exaggerated claims'),
-  ];
+    textByLang(options.lang, '持续周复盘并公开迭代记录', 'Weekly public iteration with measurable reviews'),
+  ]);
 
   return `# ${textByLang(options.lang, 'IPClaw 人设卡', 'IPClaw Persona Card')}
 
@@ -466,8 +572,18 @@ function buildTopicIdeas(
   options: CliOptions,
   keyPoints: string[],
   templatePath: string,
+  caseBrief?: CaseBrief,
 ): string {
-  const insights = extractInsights(keyPoints, 8);
+  const insights = extractInsights(keyPoints, 10);
+  const normalizedInsights = insights
+    .map((item) => item.replace(/`/g, '').replace(/[。.!?]+$/g, '').trim())
+    .filter((item) => item.length >= 6 && item.length <= 32)
+    .filter((item) => !/^\/ip-[a-z-]+/i.test(item))
+    .filter((item) => !/[\/\\]/.test(item))
+    .filter((item) => !/[+＋]/.test(item))
+    .filter((item) =>
+      !/(完整闭环|人工审批|追踪参数|内容支柱|一句话定位|改写为|背景|目标受众|本周构建日志)/i.test(item),
+    );
 
   const focusSeeds = options.focusTags.map((tag) =>
     textByLang(
@@ -477,13 +593,33 @@ function buildTopicIdeas(
     ),
   );
 
+  const defaultSeeds = [
+    textByLang(options.lang, `${options.niche}增长飞轮`, `${options.niche} growth loop`),
+    textByLang(options.lang, `${options.niche}定位校准`, `${options.niche} positioning calibration`),
+    textByLang(options.lang, `${options.niche}案例复盘`, `${options.niche} case review`),
+    textByLang(options.lang, `${options.niche}分发策略`, `${options.niche} distribution strategy`),
+    textByLang(options.lang, `${options.niche}转化路径`, `${options.niche} conversion pathway`),
+    textByLang(options.lang, `${options.niche}执行节奏`, `${options.niche} execution cadence`),
+    textByLang(options.lang, `${options.niche}内容资产化`, `${options.niche} content assetization`),
+    textByLang(options.lang, `${options.niche}数据复盘`, `${options.niche} metrics review`),
+  ];
+
+  const caseSeeds = caseBrief
+    ? [caseBrief.problem, caseBrief.action, caseBrief.result]
+        .map((seed) => seed.trim())
+        .map((seed) => seed.replace(/[。.!?]+$/g, '').trim())
+        .filter((seed) => seed.length >= 6 && seed.length <= 32)
+    : [];
+
   const seeds = dedupe([
     ...focusSeeds,
-    ...insights,
+    ...caseSeeds,
+    ...normalizedInsights,
+    ...defaultSeeds,
     textByLang(options.lang, `${options.niche}常见误区`, `Common mistakes in ${options.niche}`),
     textByLang(options.lang, `${options.niche}执行路径`, `Execution path for ${options.niche}`),
     textByLang(options.lang, `${options.niche}案例拆解`, `Case breakdowns in ${options.niche}`),
-  ]).slice(0, 8);
+  ]).slice(0, 18);
 
   const channelLabels = options.channels.map((channel) => toChannelLabel(channel));
   const quotas = resolveTopicQuota(options.topicCount);
@@ -570,6 +706,7 @@ function buildTopicIdeas(
   ];
 
   const ideas: TopicIdea[] = [];
+  const usedTitles = new Set<string>();
 
   const appendIdeas = (
     priority: TopicIdea['priority'],
@@ -577,11 +714,34 @@ function buildTopicIdeas(
     builders: TopicBuilder[],
     startIndex: number,
   ): void => {
-    for (let index = 0; index < count; index += 1) {
-      const seed = seeds[(startIndex + index) % seeds.length];
-      const channel = channelLabels[(startIndex + index) % channelLabels.length];
-      const builder = builders[index % builders.length];
-      const content = builder(seed, options);
+    const combinations: Array<{ seed: string; builder: TopicBuilder }> = [];
+    for (let seedIndex = 0; seedIndex < seeds.length; seedIndex += 1) {
+      for (let builderIndex = 0; builderIndex < builders.length; builderIndex += 1) {
+        combinations.push({
+          seed: seeds[seedIndex],
+          builder: builders[builderIndex],
+        });
+      }
+    }
+
+    if (combinations.length === 0) return;
+
+    const safeChannels =
+      channelLabels.length > 0
+        ? channelLabels
+        : [textByLang(options.lang, 'GitHub', 'GitHub')];
+
+    let added = 0;
+    for (
+      let index = 0;
+      index < combinations.length && added < count;
+      index += 1
+    ) {
+      const combo = combinations[(startIndex + index) % combinations.length];
+      const channel = safeChannels[(startIndex + index) % safeChannels.length];
+      const content = combo.builder(combo.seed, options);
+      if (usedTitles.has(content.title)) continue;
+      usedTitles.add(content.title);
       ideas.push({
         priority,
         title: content.title,
@@ -591,6 +751,43 @@ function buildTopicIdeas(
         cta: options.cta,
         channel,
       });
+      added += 1;
+    }
+
+    let fallback = 1;
+    while (added < count) {
+      const seed = seeds[(startIndex + fallback) % seeds.length];
+      const title = textByLang(
+        options.lang,
+        `实战补位：${seed}（第 ${fallback} 版）`,
+        `Fallback execution topic: ${seed} (v${fallback})`,
+      );
+      if (usedTitles.has(title)) {
+        fallback += 1;
+        continue;
+      }
+      const channel =
+        safeChannels[(startIndex + combinations.length + fallback) % safeChannels.length];
+      usedTitles.add(title);
+      ideas.push({
+        priority,
+        title,
+        angle: textByLang(
+          options.lang,
+          '补齐本轮题量，优先补充可验证步骤与边界条件。',
+          'Fill backlog with verifiable steps and explicit guardrails.',
+        ),
+        format: textByLang(options.lang, '执行清单 + 复盘卡', 'Execution checklist + review card'),
+        hook: textByLang(
+          options.lang,
+          '这条是补位题，重点是可执行和可验证。',
+          'This is a fallback topic focused on execution and validation.',
+        ),
+        cta: options.cta,
+        channel,
+      });
+      added += 1;
+      fallback += 1;
     }
   };
 
@@ -665,6 +862,130 @@ ${options.repoUrl ? `- Repo: ${options.repoUrl}` : ''}
 `;
 }
 
+function buildContentPack(
+  options: CliOptions,
+  keyPoints: string[],
+  templatePath: string,
+  caseBrief?: CaseBrief,
+): string {
+  const insights = extractInsights(keyPoints, 8);
+  const proofPoints = extractProofPoints(keyPoints, options.lang, 2);
+  const proofLine = proofPoints[0];
+  const repoLink = options.repoUrl || 'https://github.com/<you>/IPClaw';
+
+  const problem =
+    caseBrief?.problem ||
+    insights[0] ||
+    textByLang(
+      options.lang,
+      `目标受众在 ${options.niche} 上有持续执行难题。`,
+      `Target audience has repeatable execution pain in ${options.niche}.`,
+    );
+  const action =
+    caseBrief?.action ||
+    insights[1] ||
+    textByLang(
+      options.lang,
+      '用定位、人设、选题优先级三步重构执行路径。',
+      'Rebuild execution with positioning, persona, and prioritized topic planning.',
+    );
+  const result =
+    caseBrief?.result ||
+    proofLine ||
+    textByLang(
+      options.lang,
+      '已形成可验证的周迭代闭环。',
+      'A measurable weekly iteration loop is now in place.',
+    );
+
+  const githubTitle = textByLang(
+    options.lang,
+    `从构建日志到增长闭环：${options.niche} 一次实战复盘`,
+    `From build log to growth loop: a practical ${options.niche} breakdown`,
+  );
+
+  const shortPosts = [
+    textByLang(
+      options.lang,
+      `我刚把一条构建日志转成了完整增长闭环。问题是：${problem}。做法是：${action}。结果：${result}。${options.cta} ${repoLink}`,
+      `I turned one build log into a full growth loop. Problem: ${problem}. Action: ${action}. Result: ${result}. ${options.cta} ${repoLink}`,
+    ),
+    textByLang(
+      options.lang,
+      `多数人卡住不是不努力，而是没有执行系统。这个案例里我用 IPClaw 做了定位->人设->P1/P2/P3 选题，结果：${result}。${repoLink}`,
+      `Most creators are stuck not because of effort, but because they lack an execution system. In this case, IPClaw generated positioning -> persona -> P1/P2/P3 topics. Result: ${result}. ${repoLink}`,
+    ),
+    textByLang(
+      options.lang,
+      `案例快照：问题=${problem}；动作=${action}；结果=${result}。如果你也在做 ${options.niche}，这套流程可直接复用。${repoLink}`,
+      `Case snapshot: problem=${problem}; action=${action}; result=${result}. If you work on ${options.niche}, this workflow is reusable. ${repoLink}`,
+    ),
+    textByLang(
+      options.lang,
+      `本周我只做一件事：把内容生产改成结果导向。核心步骤是 ${action}，并用数据复盘。当前信号：${result}。${repoLink}`,
+      `This week I focused on one thing: turning content production into a result-oriented loop. Core step: ${action}, followed by data review. Signal so far: ${result}. ${repoLink}`,
+    ),
+    textByLang(
+      options.lang,
+      `如果你有同样问题：${problem}，欢迎贴出你的场景。我会按这个案例结构给你一版执行清单。${repoLink}`,
+      `If your problem looks like this: ${problem}, share your context. I will return an execution checklist based on this case structure. ${repoLink}`,
+    ),
+  ];
+
+  return `# ${textByLang(options.lang, 'IPClaw 内容包', 'IPClaw Content Pack')}
+
+- ${textByLang(options.lang, '模式', 'Mode')}：${caseBrief ? textByLang(options.lang, '案例驱动', 'Case-driven') : textByLang(options.lang, '标准模式', 'Standard')}
+- ${textByLang(options.lang, '创作者', 'Creator')}：${options.creator}
+- ${textByLang(options.lang, '赛道', 'Niche')}：${options.niche}
+
+## ${textByLang(options.lang, '案例快照（Problem -> Action -> Result）', 'Case Snapshot (Problem -> Action -> Result)')}
+
+- Problem: ${problem}
+- Action: ${action}
+- Result: ${result}
+
+## 1) ${textByLang(options.lang, 'GitHub 更新（问题-方案-结果）', 'GitHub Update (Problem-Solution-Result)')}
+
+### ${githubTitle}
+
+${textByLang(options.lang, '问题', 'Problem')}：${problem}
+
+${textByLang(options.lang, '方案', 'Solution')}：${action}
+
+${textByLang(options.lang, '结果', 'Result')}：${result}
+
+${textByLang(options.lang, '下一步', 'Next Step')}：${options.cta}
+
+${textByLang(options.lang, '仓库链接', 'Repo')}：${repoLink}
+
+## 2) ${textByLang(options.lang, '短内容版本 x5', 'Short Posts x5')}
+
+1. ${shortPosts[0]}
+2. ${shortPosts[1]}
+3. ${shortPosts[2]}
+4. ${shortPosts[3]}
+5. ${shortPosts[4]}
+
+## 3) ${textByLang(options.lang, '社区讨论贴', 'Community Discussion Post')}
+
+${textByLang(
+    options.lang,
+    `我们最近在做一个 ${options.niche} 的执行实验。当前案例是：问题「${problem}」，动作「${action}」，结果「${result}」。你最关心哪一步：定位、人设还是选题优先级？欢迎直接回复你的场景，我会补一版可执行方案。`,
+    `We are running an execution experiment around ${options.niche}. Current case: problem "${problem}", action "${action}", result "${result}". Which step matters most to you: positioning, persona, or topic prioritization? Share your context and I will propose an actionable plan.`,
+  )}
+
+## 4) ${textByLang(options.lang, 'Changelog 摘要', 'Changelog Summary')}
+
+- ${textByLang(options.lang, '新增', 'Added')}：${textByLang(options.lang, '案例驱动内容包输出', 'Case-driven content-pack output')}
+- ${textByLang(options.lang, '优化', 'Improved')}：${textByLang(options.lang, '选题去重与语义多样性', 'topic de-duplication and semantic variety')}
+- ${textByLang(options.lang, '用户价值', 'User Value')}：${textByLang(options.lang, '从“有输出”转向“有验证结果”的发布节奏', 'a shift from output-only posting to measurable iteration')}
+
+## ${textByLang(options.lang, '模板参考', 'Template Reference')}
+
+- ${templatePath}
+`;
+}
+
 function main(): void {
   const options = parseArgs();
   const runId = timestampSlug();
@@ -674,17 +995,27 @@ function main(): void {
   ensureDir(outputDir);
 
   const sourceText = options.sourcePath ? readIfExists(options.sourcePath) : '';
-  const keyPoints = extractKeyPoints(sourceText, 6);
-  const insights = extractInsights(keyPoints, 6);
+  const caseTextFromFile = options.caseFilePath
+    ? readIfExists(options.caseFilePath)
+    : '';
+  const caseText = normalizeCaseText(
+    [options.caseInput || '', caseTextFromFile].filter(Boolean).join('\n'),
+  );
+  const combinedSource = [sourceText, caseText].filter(Boolean).join('\n');
+  const keyPoints = extractKeyPoints(combinedSource, 12);
+  const insights = extractInsights(keyPoints, 10);
   const proofPoints = extractProofPoints(keyPoints, options.lang, 3);
+  const caseBrief = parseCaseBrief(caseText, keyPoints, options.lang);
 
   const positioningTemplatePath = 'templates/ipclaw/positioning-prompt.md';
   const personaTemplatePath = 'templates/ipclaw/persona-canvas.md';
   const topicTemplatePath = 'templates/ipclaw/topic-ideas.md';
+  const contentTemplatePath = 'templates/ipclaw/content-repurpose.md';
 
   loadTemplate(positioningTemplatePath);
   loadTemplate(personaTemplatePath);
   loadTemplate(topicTemplatePath);
+  loadTemplate(contentTemplatePath);
 
   const indexContent = `# IPClaw Run Pack
 
@@ -698,6 +1029,8 @@ function main(): void {
 - Topics: ${options.topicCount}
 - Goal: ${options.goal || '(default)'}
 - Source: ${options.sourcePath || '(none)'}
+- Case: ${caseBrief ? textByLang(options.lang, '已启用', 'enabled') : '(none)'}
+- Case File: ${options.caseFilePath || '(none)'}
 - Repo: ${options.repoUrl || '(none)'}
 - Generated At: ${new Date().toISOString()}
 
@@ -706,6 +1039,7 @@ function main(): void {
 - 01-positioning.md
 - 02-persona.md
 - 03-topic-ideas.md
+- 04-content-pack.md
 
 ## Auto-fill Summary
 
@@ -725,22 +1059,32 @@ function main(): void {
     options,
     keyPoints,
     positioningTemplatePath,
+    caseBrief,
   );
   const personaContent = buildPersonaCard(
     options,
     keyPoints,
     personaTemplatePath,
+    caseBrief,
   );
   const topicIdeasContent = buildTopicIdeas(
     options,
     keyPoints,
     topicTemplatePath,
+    caseBrief,
+  );
+  const contentPack = buildContentPack(
+    options,
+    keyPoints,
+    contentTemplatePath,
+    caseBrief,
   );
 
   writeFile(path.join(outputDir, 'README.md'), indexContent);
   writeFile(path.join(outputDir, '01-positioning.md'), positioningContent);
   writeFile(path.join(outputDir, '02-persona.md'), personaContent);
   writeFile(path.join(outputDir, '03-topic-ideas.md'), topicIdeasContent);
+  writeFile(path.join(outputDir, '04-content-pack.md'), contentPack);
 
   console.log(outputDir);
 }

@@ -1,7 +1,7 @@
 {
-  "name": "nanoclaw",
+  "name": "ipclaw",
   "version": "1.1.6",
-  "description": "Personal Claude assistant. Lightweight, secure, customizable.",
+  "description": "GitHub-first personal IP growth engine for creators and indie builders.",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -41,6 +41,7 @@
     "typescript": "^5.7.0",
     "vitest": "^4.0.18"
   },
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=20"
   }

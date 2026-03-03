@@ -27,7 +27,7 @@
 | 选题规划（P1/P2/P3） | ❌ | 部分 | ✅ **优先级分层** |
 | 多渠道分发建议 | ❌ | ✅ | ✅ **GitHub/X/微信** |
 | 本地运行/数据私有 | ❌ | ❌ | ✅ **完全本地** |
-| 开源可定制 | ❌ | ❌ | ✅ **MIT 协议** |
+| 开源可定制 | ❌ | ❌ | ✅ **Apache 2.0 + 附加条款** |
 
 **一句话差异**：别的工具帮你"写内容"，IPClaw 帮你"建系统"。
 
@@ -64,7 +64,17 @@ npm run ip:run -- \
 plans/ipclaw-runs/<timestamp>/
 ├── 01-positioning.md   # 定位卡
 ├── 02-persona.md       # 人设卡
-└── 03-topic-ideas.md   # 选题包（P1/P2/P3）
+├── 03-topic-ideas.md   # 选题包（P1/P2/P3）
+└── 04-content-pack.md  # 案例驱动内容包
+```
+
+**案例驱动模式（可选）：**
+```bash
+npm run ip:run -- \
+  --creator "Andy" \
+  --niche "个人IP自动化" \
+  --audience "独立开发者" \
+  --case "问题：发了内容没有转化；动作：重做定位+P1选题；结果：一周新增3个意向线索"
 ```
 
 ---
@@ -100,6 +110,7 @@ npm run ip:run -- \
   --niche "个人IP自动化" \
   --audience "独立开发者" \
   --source docs/IPCLAW_MUSK_5STEP_EXECUTION.md \
+  --case "问题：发了内容没有转化；动作：重做定位+P1选题并每周复盘；结果：一周新增3个意向线索" \
   --repo "https://github.com/AIPMAndy/IPClaw" \
   --channels github,x,wechat \
   --focus "增长飞轮,模板复用,案例拆解" \
@@ -220,6 +231,15 @@ npm run ip:run -- \
   --creator "YourName" \
   --niche "Your Niche" \
   --audience "Target Audience"
+```
+
+Optional case-driven mode:
+```bash
+npm run ip:run -- \
+  --creator "YourName" \
+  --niche "Your Niche" \
+  --audience "Target Audience" \
+  --case "Problem: posted content with no leads; Action: rebuilt positioning + P1 topics; Result: higher CTR in one week"
 ```
 
 ### License

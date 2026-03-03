@@ -12,6 +12,8 @@ npm run ip:run -- \
   --niche "个人IP内容生产与运营" \
   --audience "独立开发者" \
   --source plans/weekly-build-log.md \
+  --case "问题：发了内容但没有线索；动作：重做定位和选题优先级；结果：点击率提升 35%" \
+  --case-file plans/case-notes.md \
   --repo "https://github.com/<you>/IPClaw" \
   --cta "回复你的场景，我给你一版可执行策略" \
   --channels github,x,wechat \
@@ -29,6 +31,7 @@ npm run ip:run -- \
 - `01-positioning.md`
 - `02-persona.md`
 - `03-topic-ideas.md`
+- `04-content-pack.md`（案例驱动内容包）
 
 ### 参数说明
 
@@ -36,6 +39,8 @@ npm run ip:run -- \
 - `--niche`：主赛道（必填）
 - `--audience`：目标受众（必填）
 - `--source`：素材文件（可选，建议提供）
+- `--case`：案例摘要文本（可选，建议 1-3 句）
+- `--case-file`：案例文件路径（可选，可与 `--case` 同时使用）
 - `--repo`：仓库链接（可选，用于选题中的回链）
 - `--cta`：主 CTA（可选）
 - `--channels`：逗号分隔渠道（可选，用于选题推荐渠道，默认 `github,x`）
@@ -48,4 +53,4 @@ npm run ip:run -- \
 
 已提供 skill：`.claude/skills/ip-run/SKILL.md`
 
-在 Claude Code 中可直接使用 `/ip-run`，按提示补齐输入并完成三份核心产物。
+在 Claude Code 中可直接使用 `/ip-run`，按提示补齐输入并完成四份核心产物。

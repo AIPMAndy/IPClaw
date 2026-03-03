@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Strategy Discussion
+    url: https://github.com/AIPMAndy/IPClaw/discussions
+    about: Use Discussions for roadmap, growth strategy, and long-form use cases.
