@@ -2,22 +2,25 @@
 
 ## Source Code Changes
 
-**Accepted:** Bug fixes, security fixes, simplifications, reducing code.
+**Accepted:** Bug fixes, output-quality improvements, simplifications, reducing code.
 
-**Not accepted:** Features, capabilities, compatibility, enhancements. These should be skills.
+**Not accepted:** Heavy runtime/platform additions unrelated to `ip:run`.
 
-## Skills
+## Project Focus
 
-A [skill](https://code.claude.com/docs/en/skills) is a markdown file in `.claude/skills/` that teaches Claude Code how to transform a NanoClaw installation.
+IPClaw is now a standalone CLI. Please keep contributions within:
 
-A PR that contributes a skill should not modify any source files.
+- `scripts/ipclaw-run.ts`
+- `templates/ipclaw/*`
+- `docs/IPCLAW_*`
+- focused tests in `scripts/*.test.ts`
 
-Your skill should contain the **instructions** Claude follows to add the feature—not pre-built code. See `/add-telegram` for a good example.
+## Testing
 
-### Why?
+Run before submitting:
 
-Every user should have clean and minimal code that does exactly what they need. Skills let users selectively add features to their fork without inheriting code for features they don't want.
-
-### Testing
-
-Test your skill by running it on a fresh clone before submitting.
+```bash
+npm run lint
+npm run test
+npm run build
+```

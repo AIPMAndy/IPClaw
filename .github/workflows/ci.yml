@@ -15,11 +15,11 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Format check
-        run: npm run format:check
+      - name: Lint
+        run: npm run lint
 
-      - name: Typecheck
-        run: npx tsc --noEmit
+      - name: Test
+        run: npm run test
 
-      - name: Tests
-        run: npx vitest run
+      - name: Build
+        run: npm run build

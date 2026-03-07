@@ -11,8 +11,8 @@
 
 ## Week 1: Baseline Parity（先稳）
 
-- Complete `docs/IPCLAW_COMPATIBILITY_CHECKLIST.md`.
-- Ensure NanoClaw core path runs without regression.
+- Freeze CLI scope: only keep `ip:run` pipeline + templates + docs.
+- Ensure `npm run lint/test/build` all pass on clean install.
 - Publish `v0.1.0-ipclaw-alpha` only after P0 pass.
 - 明确 V1 禁做项：不做全自动发布，不做复杂面板。
 

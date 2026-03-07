@@ -128,8 +128,6 @@ npm run ip:run -- \
 ```
 IPClaw/
 ├── scripts/ipclaw-run.ts        # 核心执行脚本
-├── extensions/ipclaw/           # IP 增长模块
-│   └── positioning/             # 定位诊断
 ├── templates/ipclaw/            # 模板资产
 ├── docs/
 │   ├── IPCLAW_COMMANDS.md       # 命令参考

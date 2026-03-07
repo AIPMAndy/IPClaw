@@ -49,8 +49,8 @@ npm run ip:run -- \
 - `--goal`：本轮产出目标（可选）
 - `--lang`：`zh`/`en`（可选，默认 `zh`）
 
-### Skill 入口
+### 使用建议
 
-已提供 skill：`.claude/skills/ip-run/SKILL.md`
-
-在 Claude Code 中可直接使用 `/ip-run`，按提示补齐输入并完成四份核心产物。
+- 先用 `--topics 12` 跑默认版本，确认语气和结构。
+- 再通过 `--focus` 与 `--case` 精细化第二版输出。
+- 最后固定每周同一时间执行一次，形成持续复盘节奏。
