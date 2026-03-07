@@ -2,9 +2,10 @@
  * Step: whatsapp-auth — Full WhatsApp auth flow with polling.
  * Replaces 04-auth-whatsapp.sh
  */
-import { execSync, spawn } from 'child_process';
+import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import QRCode from 'qrcode';
 
 import { logger } from '../src/logger.js';
 import { openBrowser, isHeadless } from './platform.js';
@@ -123,11 +124,22 @@ function emitAuthStatus(
   emitStatus('AUTH_WHATSAPP', fields);
 }
 
+function ensureRuntimeDirs(projectRoot: string): void {
+  fs.mkdirSync(path.join(projectRoot, 'logs'), { recursive: true });
+  fs.mkdirSync(path.join(projectRoot, 'store'), { recursive: true });
+}
+
+export async function generateQrAuthHtml(qrData: string): Promise<string> {
+  const svg = await QRCode.toString(qrData, { type: 'svg' });
+  return QR_AUTH_TEMPLATE.replace('{{QR_SVG}}', svg);
+}
+
 export async function run(args: string[]): Promise<void> {
   const projectRoot = process.cwd();
   const { method, phone } = parseArgs(args);
   const statusFile = path.join(projectRoot, 'store', 'auth-status.txt');
   const qrFile = path.join(projectRoot, 'store', 'qr-data.txt');
+  ensureRuntimeDirs(projectRoot);
 
   if (!method) {
     emitAuthStatus('unknown', 'failed', 'failed', {
@@ -244,11 +256,7 @@ async function handleQrBrowser(
   // Generate QR SVG and HTML
   const qrData = fs.readFileSync(qrFile, 'utf-8');
   try {
-    const svg = execSync(
-      `node -e "const QR=require('qrcode');const data='${qrData}';QR.toString(data,{type:'svg'},(e,s)=>{if(e)process.exit(1);process.stdout.write(s)})"`,
-      { cwd: projectRoot, encoding: 'utf-8' },
-    );
-    const html = QR_AUTH_TEMPLATE.replace('{{QR_SVG}}', svg);
+    const html = await generateQrAuthHtml(qrData);
     const htmlPath = path.join(projectRoot, 'store', 'qr-auth.html');
     fs.writeFileSync(htmlPath, html);
 

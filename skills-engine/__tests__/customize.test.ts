@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -31,11 +31,13 @@ describe('customize', () => {
     createMinimalState(tmpDir);
     fs.mkdirSync(path.join(tmpDir, CUSTOM_DIR), { recursive: true });
     process.chdir(tmpDir);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
     process.chdir(originalCwd);
     cleanup(tmpDir);
+    vi.restoreAllMocks();
   });
 
   it('startCustomize creates pending.yaml and isCustomizeActive returns true', () => {

@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
+vi.mock('./logger.js', () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 import { GroupQueue } from './group-queue.js';
 
 // Mock config to control concurrency limit

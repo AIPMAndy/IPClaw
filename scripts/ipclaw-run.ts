@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 interface CliOptions {
   creator: string;
@@ -53,16 +54,30 @@ function getArg(name: string): string | undefined {
   return process.argv[index + 1];
 }
 
+export function resolveLang(langArg?: string): 'zh' | 'en' {
+  return langArg === 'en' ? 'en' : 'zh';
+}
+
+export function resolveDefaultCta(lang: 'zh' | 'en', ctaArg?: string): string {
+  return (
+    ctaArg ||
+    textByLang(
+      lang,
+      '欢迎回复你的场景，我会给你一版可执行的 IP 增长方案',
+      'Reply with your context and I will draft an actionable IP growth plan for you.',
+    )
+  );
+}
+
 function parseArgs(): CliOptions {
   const creator = getArg('creator');
   const niche = getArg('niche');
   const audience = getArg('audience');
-  const cta =
-    getArg('cta') ||
-    '欢迎回复你的场景，我会给你一版可执行的 IP 增长方案';
+  const langArg = getArg('lang');
+  const lang = resolveLang(langArg);
+  const cta = resolveDefaultCta(lang, getArg('cta'));
   const repoUrl = getArg('repo');
   const goal = getArg('goal');
-  const langArg = getArg('lang');
   const rawFocus = getArg('focus') || '';
   const focusTags = rawFocus
     .split(',')
@@ -76,7 +91,6 @@ function parseArgs(): CliOptions {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
-  const lang: 'zh' | 'en' = langArg === 'en' ? 'en' : 'zh';
 
   if (!creator || !niche || !audience) {
     console.error(
@@ -86,17 +100,23 @@ function parseArgs(): CliOptions {
   }
 
   if (channels.length === 0) {
-    console.error('At least one channel is required. Example: --channels github,x');
+    console.error(
+      'At least one channel is required. Example: --channels github,x',
+    );
     process.exit(1);
   }
 
   if (!Number.isInteger(topicCount) || topicCount < 3 || topicCount > 60) {
-    console.error('Topics count must be an integer between 3 and 60. Example: --topics 20');
+    console.error(
+      'Topics count must be an integer between 3 and 60. Example: --topics 20',
+    );
     process.exit(1);
   }
 
   if (focusTags.some((tag) => tag.length > 24)) {
-    console.error('Each focus tag should be 24 characters or fewer. Example: --focus 增长飞轮,模板复用');
+    console.error(
+      'Each focus tag should be 24 characters or fewer. Example: --focus 增长飞轮,模板复用',
+    );
     process.exit(1);
   }
 
@@ -162,11 +182,7 @@ function loadTemplate(relativePath: string): string {
   return fs.readFileSync(fullPath, 'utf-8');
 }
 
-function textByLang(
-  lang: 'zh' | 'en',
-  zhText: string,
-  enText: string,
-): string {
+function textByLang(lang: 'zh' | 'en', zhText: string, enText: string): string {
   return lang === 'zh' ? zhText : enText;
 }
 
@@ -217,7 +233,8 @@ function extractKeyPoints(sourceText: string, maxPoints = 6): string[] {
 
   const genericCandidates = rawLines.map(normalizeLine).filter(isUseful);
 
-  const lines = bulletCandidates.length >= 3 ? bulletCandidates : genericCandidates;
+  const lines =
+    bulletCandidates.length >= 3 ? bulletCandidates : genericCandidates;
 
   if (lines.length > 0) {
     return dedupe(lines).slice(0, maxPoints);
@@ -241,15 +258,27 @@ function extractInsights(points: string[], maxPoints = 6): string[] {
   return dedupe(
     points
       .map((point) => point.replace(/`/g, '').trim())
-      .map((point) => point.replace(/^([a-zA-Z\u4e00-\u9fa5]{1,16})[：:]\s*/, '').trim())
+      .map((point) =>
+        point.replace(/^([a-zA-Z\u4e00-\u9fa5]{1,16})[：:]\s*/, '').trim(),
+      )
       .filter((point) => point.length >= 8)
       .filter((point) => !isMetricPoint(point))
       .filter((point) => !/^step\s*\d+/i.test(point))
       .filter((point) => !/^(首发渠道|外部分发)\b/.test(point))
-      .filter((point) => !/^(positioning|content|distribution|analytics)\b/i.test(point))
-      .filter((point) => !/^(GitHub\s*Star|GitHub\s*Followers|种子用户线索|每月可验证案例)\b/i.test(point))
+      .filter(
+        (point) =>
+          !/^(positioning|content|distribution|analytics)\b/i.test(point),
+      )
+      .filter(
+        (point) =>
+          !/^(GitHub\s*Star|GitHub\s*Followers|种子用户线索|每月可验证案例)\b/i.test(
+            point,
+          ),
+      )
       .filter((point) => !/二选一主渠道/.test(point))
-      .filter((point) => !/一句话定位\s*\+\s*三个内容支柱\s*\+\s*CTA/i.test(point)),
+      .filter(
+        (point) => !/一句话定位\s*\+\s*三个内容支柱\s*\+\s*CTA/i.test(point),
+      ),
   ).slice(0, maxPoints);
 }
 
@@ -381,17 +410,23 @@ function parseCaseBrief(
     lines[0];
   const actionLine =
     findLine([/^(动作|做法|方案|执行|action|approach|solution)/i]) ||
-    findLine([/(动作|做法|方案|执行|尝试|用了|action|approach|solution|implemented)/i]) ||
+    findLine([
+      /(动作|做法|方案|执行|尝试|用了|action|approach|solution|implemented)/i,
+    ]) ||
     lines[Math.min(1, lines.length - 1)];
   const resultLine =
     findLine([/^(结果|数据|收益|result|outcome|impact)/i]) ||
-    findLine([/(提升|增长|降低|转化率|star|click|lead|result|outcome|impact|%|\d+)/i]) ||
+    findLine([
+      /(提升|增长|降低|转化率|star|click|lead|result|outcome|impact|%|\d+)/i,
+    ]) ||
     keyPoints.find((point) => isMetricPoint(point)) ||
     lines[Math.min(2, lines.length - 1)];
 
   const summary = stripCasePrefix(lines[0]);
   const problem = stripCasePrefix(problemLine || lines[0]);
-  const action = stripCasePrefix(actionLine || lines[Math.min(1, lines.length - 1)]);
+  const action = stripCasePrefix(
+    actionLine || lines[Math.min(1, lines.length - 1)],
+  );
   const result = stripCasePrefix(
     resultLine ||
       textByLang(
@@ -413,8 +448,12 @@ function buildPositioningCard(
   const insights = extractInsights(keyPoints, 6);
   const proofPoints = extractProofPoints(keyPoints, options.lang, 3);
   const line1 = insights[0] || fallbackInsight(options);
-  const line2 = insights[1] || textByLang(options.lang, '输出可复用模板', 'Ship reusable templates');
-  const line3 = insights[2] || textByLang(options.lang, '给出执行优先级', 'Provide execution priorities');
+  const line2 =
+    insights[1] ||
+    textByLang(options.lang, '输出可复用模板', 'Ship reusable templates');
+  const line3 =
+    insights[2] ||
+    textByLang(options.lang, '给出执行优先级', 'Provide execution priorities');
 
   const oneLine = textByLang(
     options.lang,
@@ -475,7 +514,8 @@ ${differentiation}
 
 ${evidence}
 
-${caseBrief
+${
+  caseBrief
     ? `## ${textByLang(options.lang, '案例锚点', 'Case Anchor')}
 
 - ${textByLang(options.lang, '问题', 'Problem')}：${caseBrief.problem}
@@ -483,7 +523,8 @@ ${caseBrief
 - ${textByLang(options.lang, '结果', 'Result')}：${caseBrief.result}
 
 `
-    : ''}
+    : ''
+}
 
 ## CTA
 
@@ -516,20 +557,62 @@ function buildPersonaCard(
 ): string {
   const insights = extractInsights(keyPoints, 6);
   const painPoints = [
-    caseBrief?.problem || insights[0] || textByLang(options.lang, `很难持续做出高质量${options.niche}内容`, `Hard to sustain high-quality ${options.niche} content`),
-    insights[1] || textByLang(options.lang, '有输出但缺少明确结构与人设一致性', 'Outputs exist but lack a clear structure and persona consistency'),
-    insights[2] || textByLang(options.lang, '不知道哪些选题能带来有效互动与转化', 'Unclear which topics can create engagement and conversion'),
+    caseBrief?.problem ||
+      insights[0] ||
+      textByLang(
+        options.lang,
+        `很难持续做出高质量${options.niche}内容`,
+        `Hard to sustain high-quality ${options.niche} content`,
+      ),
+    insights[1] ||
+      textByLang(
+        options.lang,
+        '有输出但缺少明确结构与人设一致性',
+        'Outputs exist but lack a clear structure and persona consistency',
+      ),
+    insights[2] ||
+      textByLang(
+        options.lang,
+        '不知道哪些选题能带来有效互动与转化',
+        'Unclear which topics can create engagement and conversion',
+      ),
   ];
 
-  const goalText = options.goal || textByLang(options.lang, '每周稳定产出并发布 2-3 条高质量内容', 'Publish 2-3 high-quality pieces every week');
+  const goalText =
+    options.goal ||
+    textByLang(
+      options.lang,
+      '每周稳定产出并发布 2-3 条高质量内容',
+      'Publish 2-3 high-quality pieces every week',
+    );
 
   const trustSignals = dedupe([
     caseBrief
-      ? textByLang(options.lang, `真实案例结果：${caseBrief.result}`, `Real case evidence: ${caseBrief.result}`)
-      : textByLang(options.lang, '可验证的真实构建过程', 'Verifiable real build process'),
-    textByLang(options.lang, '可复制的模板与步骤', 'Reusable templates and steps'),
-    textByLang(options.lang, '清晰边界：不夸大承诺', 'Clear boundaries: no exaggerated claims'),
-    textByLang(options.lang, '持续周复盘并公开迭代记录', 'Weekly public iteration with measurable reviews'),
+      ? textByLang(
+          options.lang,
+          `真实案例结果：${caseBrief.result}`,
+          `Real case evidence: ${caseBrief.result}`,
+        )
+      : textByLang(
+          options.lang,
+          '可验证的真实构建过程',
+          'Verifiable real build process',
+        ),
+    textByLang(
+      options.lang,
+      '可复制的模板与步骤',
+      'Reusable templates and steps',
+    ),
+    textByLang(
+      options.lang,
+      '清晰边界：不夸大承诺',
+      'Clear boundaries: no exaggerated claims',
+    ),
+    textByLang(
+      options.lang,
+      '持续周复盘并公开迭代记录',
+      'Weekly public iteration with measurable reviews',
+    ),
   ]);
 
   return `# ${textByLang(options.lang, 'IPClaw 人设卡', 'IPClaw Persona Card')}
@@ -576,13 +659,21 @@ function buildTopicIdeas(
 ): string {
   const insights = extractInsights(keyPoints, 10);
   const normalizedInsights = insights
-    .map((item) => item.replace(/`/g, '').replace(/[。.!?]+$/g, '').trim())
+    .map((item) =>
+      item
+        .replace(/`/g, '')
+        .replace(/[。.!?]+$/g, '')
+        .trim(),
+    )
     .filter((item) => item.length >= 6 && item.length <= 32)
     .filter((item) => !/^\/ip-[a-z-]+/i.test(item))
     .filter((item) => !/[\/\\]/.test(item))
     .filter((item) => !/[+＋]/.test(item))
-    .filter((item) =>
-      !/(完整闭环|人工审批|追踪参数|内容支柱|一句话定位|改写为|背景|目标受众|本周构建日志)/i.test(item),
+    .filter(
+      (item) =>
+        !/(完整闭环|人工审批|追踪参数|内容支柱|一句话定位|改写为|背景|目标受众|本周构建日志)/i.test(
+          item,
+        ),
     );
 
   const focusSeeds = options.focusTags.map((tag) =>
@@ -594,14 +685,46 @@ function buildTopicIdeas(
   );
 
   const defaultSeeds = [
-    textByLang(options.lang, `${options.niche}增长飞轮`, `${options.niche} growth loop`),
-    textByLang(options.lang, `${options.niche}定位校准`, `${options.niche} positioning calibration`),
-    textByLang(options.lang, `${options.niche}案例复盘`, `${options.niche} case review`),
-    textByLang(options.lang, `${options.niche}分发策略`, `${options.niche} distribution strategy`),
-    textByLang(options.lang, `${options.niche}转化路径`, `${options.niche} conversion pathway`),
-    textByLang(options.lang, `${options.niche}执行节奏`, `${options.niche} execution cadence`),
-    textByLang(options.lang, `${options.niche}内容资产化`, `${options.niche} content assetization`),
-    textByLang(options.lang, `${options.niche}数据复盘`, `${options.niche} metrics review`),
+    textByLang(
+      options.lang,
+      `${options.niche}增长飞轮`,
+      `${options.niche} growth loop`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}定位校准`,
+      `${options.niche} positioning calibration`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}案例复盘`,
+      `${options.niche} case review`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}分发策略`,
+      `${options.niche} distribution strategy`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}转化路径`,
+      `${options.niche} conversion pathway`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}执行节奏`,
+      `${options.niche} execution cadence`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}内容资产化`,
+      `${options.niche} content assetization`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}数据复盘`,
+      `${options.niche} metrics review`,
+    ),
   ];
 
   const caseSeeds = caseBrief
@@ -616,92 +739,286 @@ function buildTopicIdeas(
     ...caseSeeds,
     ...normalizedInsights,
     ...defaultSeeds,
-    textByLang(options.lang, `${options.niche}常见误区`, `Common mistakes in ${options.niche}`),
-    textByLang(options.lang, `${options.niche}执行路径`, `Execution path for ${options.niche}`),
-    textByLang(options.lang, `${options.niche}案例拆解`, `Case breakdowns in ${options.niche}`),
+    textByLang(
+      options.lang,
+      `${options.niche}常见误区`,
+      `Common mistakes in ${options.niche}`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}执行路径`,
+      `Execution path for ${options.niche}`,
+    ),
+    textByLang(
+      options.lang,
+      `${options.niche}案例拆解`,
+      `Case breakdowns in ${options.niche}`,
+    ),
   ]).slice(0, 18);
 
-  const channelLabels = options.channels.map((channel) => toChannelLabel(channel));
+  const channelLabels = options.channels.map((channel) =>
+    toChannelLabel(channel),
+  );
   const quotas = resolveTopicQuota(options.topicCount);
 
   const p1Builders: TopicBuilder[] = [
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `把「${seed}」拆成 3 步执行图`, `Break down "${seed}" into 3 executable steps`),
-      angle: textByLang(localOptions.lang, '给读者一个今天就能开始的路径。', 'Give readers a path they can start today.'),
-      format: textByLang(localOptions.lang, '清单帖 + 示例图', 'Checklist + visual example'),
-      hook: textByLang(localOptions.lang, '如果你总感觉知道但做不出来，这条给你。', 'If you know it but cannot execute, this is for you.'),
+      title: textByLang(
+        localOptions.lang,
+        `把「${seed}」拆成 3 步执行图`,
+        `Break down "${seed}" into 3 executable steps`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '给读者一个今天就能开始的路径。',
+        'Give readers a path they can start today.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '清单帖 + 示例图',
+        'Checklist + visual example',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '如果你总感觉知道但做不出来，这条给你。',
+        'If you know it but cannot execute, this is for you.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `为什么多数人卡在「${seed}」而不是努力不够`, `Why most people get stuck on "${seed}" (not because of effort)`),
-      angle: textByLang(localOptions.lang, '反直觉观点 + 证据。', 'Contrarian point with evidence.'),
-      format: textByLang(localOptions.lang, '观点帖 + 评论引导', 'Opinion post + discussion prompt'),
-      hook: textByLang(localOptions.lang, '真正的问题不在执行力，而在路径设计。', 'The bottleneck is path design, not discipline.'),
+      title: textByLang(
+        localOptions.lang,
+        `为什么多数人卡在「${seed}」而不是努力不够`,
+        `Why most people get stuck on "${seed}" (not because of effort)`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '反直觉观点 + 证据。',
+        'Contrarian point with evidence.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '观点帖 + 评论引导',
+        'Opinion post + discussion prompt',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '真正的问题不在执行力，而在路径设计。',
+        'The bottleneck is path design, not discipline.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `我如何用一个模板把「${seed}」提速`, `How one template accelerated "${seed}"`),
-      angle: textByLang(localOptions.lang, '展示模板前后差异。', 'Show before/after with one template.'),
-      format: textByLang(localOptions.lang, '案例帖 + 模板下载', 'Case post + template download'),
-      hook: textByLang(localOptions.lang, '不是更努力，而是换一套模板。', 'Not more effort, better structure.'),
+      title: textByLang(
+        localOptions.lang,
+        `我如何用一个模板把「${seed}」提速`,
+        `How one template accelerated "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '展示模板前后差异。',
+        'Show before/after with one template.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '案例帖 + 模板下载',
+        'Case post + template download',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '不是更努力，而是换一套模板。',
+        'Not more effort, better structure.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `做「${seed}」最容易犯的 5 个错`, `Top 5 mistakes when doing "${seed}"`),
-      angle: textByLang(localOptions.lang, '先避坑再提效。', 'Avoid pitfalls before optimizing.'),
-      format: textByLang(localOptions.lang, '避坑贴 + 自测清单', 'Pitfall post + self-checklist'),
-      hook: textByLang(localOptions.lang, '你可能已经踩了其中 2 个坑。', 'You likely hit 2 of these already.'),
+      title: textByLang(
+        localOptions.lang,
+        `做「${seed}」最容易犯的 5 个错`,
+        `Top 5 mistakes when doing "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '先避坑再提效。',
+        'Avoid pitfalls before optimizing.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '避坑贴 + 自测清单',
+        'Pitfall post + self-checklist',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '你可能已经踩了其中 2 个坑。',
+        'You likely hit 2 of these already.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `从 0 到 1：一周完成「${seed}」的排期`, `From 0 to 1: a one-week schedule for "${seed}"`),
-      angle: textByLang(localOptions.lang, '给出可落地时间盒。', 'Provide a time-boxed plan.'),
-      format: textByLang(localOptions.lang, '排期图 + TODO 清单', 'Timeline + TODO checklist'),
-      hook: textByLang(localOptions.lang, '给你一份可直接照抄的 7 天计划。', 'Here is a copy-ready 7-day plan.'),
+      title: textByLang(
+        localOptions.lang,
+        `从 0 到 1：一周完成「${seed}」的排期`,
+        `From 0 to 1: a one-week schedule for "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '给出可落地时间盒。',
+        'Provide a time-boxed plan.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '排期图 + TODO 清单',
+        'Timeline + TODO checklist',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '给你一份可直接照抄的 7 天计划。',
+        'Here is a copy-ready 7-day plan.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `一次真实拆解：${localOptions.audience}如何完成「${seed}」`, `Real breakdown: how ${localOptions.audience} can complete "${seed}"`),
-      angle: textByLang(localOptions.lang, '用真实场景讲方法。', 'Teach method through a realistic scenario.'),
-      format: textByLang(localOptions.lang, '场景剧本 + 结果对比', 'Scenario script + outcome comparison'),
-      hook: textByLang(localOptions.lang, '把抽象方法换成具体情境。', 'Turn abstract method into concrete context.'),
+      title: textByLang(
+        localOptions.lang,
+        `一次真实拆解：${localOptions.audience}如何完成「${seed}」`,
+        `Real breakdown: how ${localOptions.audience} can complete "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '用真实场景讲方法。',
+        'Teach method through a realistic scenario.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '场景剧本 + 结果对比',
+        'Scenario script + outcome comparison',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '把抽象方法换成具体情境。',
+        'Turn abstract method into concrete context.',
+      ),
     }),
   ];
 
   const p2Builders: TopicBuilder[] = [
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `FAQ：关于「${seed}」被问最多的 7 个问题`, `FAQ: 7 most asked questions about "${seed}"`),
-      angle: textByLang(localOptions.lang, '集中回答高频异议。', 'Answer frequent objections in one place.'),
+      title: textByLang(
+        localOptions.lang,
+        `FAQ：关于「${seed}」被问最多的 7 个问题`,
+        `FAQ: 7 most asked questions about "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '集中回答高频异议。',
+        'Answer frequent objections in one place.',
+      ),
       format: textByLang(localOptions.lang, '问答帖', 'Q&A post'),
-      hook: textByLang(localOptions.lang, '这 7 个问题，决定你是否能走下去。', 'These 7 questions decide whether you move forward.'),
+      hook: textByLang(
+        localOptions.lang,
+        '这 7 个问题，决定你是否能走下去。',
+        'These 7 questions decide whether you move forward.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `工具对比：做「${seed}」该怎么选`, `Tool comparison: how to choose for "${seed}"`),
-      angle: textByLang(localOptions.lang, '对比成本、速度、可维护性。', 'Compare cost, speed, and maintainability.'),
+      title: textByLang(
+        localOptions.lang,
+        `工具对比：做「${seed}」该怎么选`,
+        `Tool comparison: how to choose for "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '对比成本、速度、可维护性。',
+        'Compare cost, speed, and maintainability.',
+      ),
       format: textByLang(localOptions.lang, '对比表', 'Comparison table'),
-      hook: textByLang(localOptions.lang, '别再凭感觉选工具。', 'Stop choosing tools by intuition alone.'),
+      hook: textByLang(
+        localOptions.lang,
+        '别再凭感觉选工具。',
+        'Stop choosing tools by intuition alone.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `模板公开：我的「${seed}」工作流`, `Template drop: my workflow for "${seed}"`),
-      angle: textByLang(localOptions.lang, '给可复制资产，提升收藏/转发。', 'Offer reusable assets to boost saves and shares.'),
-      format: textByLang(localOptions.lang, '模板帖 + 使用说明', 'Template + usage guide'),
-      hook: textByLang(localOptions.lang, '直接拿去改成你的版本。', 'Take it and adapt to your context.'),
+      title: textByLang(
+        localOptions.lang,
+        `模板公开：我的「${seed}」工作流`,
+        `Template drop: my workflow for "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '给可复制资产，提升收藏/转发。',
+        'Offer reusable assets to boost saves and shares.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '模板帖 + 使用说明',
+        'Template + usage guide',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '直接拿去改成你的版本。',
+        'Take it and adapt to your context.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `我删掉了什么：聚焦「${seed}」的取舍清单`, `What I removed: trade-off list to focus on "${seed}"`),
-      angle: textByLang(localOptions.lang, '展示克制与边界，建立信任。', 'Show restraint and boundaries to build trust.'),
-      format: textByLang(localOptions.lang, '反思帖 + 决策树', 'Reflection + decision tree'),
-      hook: textByLang(localOptions.lang, '好策略是删出来的。', 'Good strategy comes from subtraction.'),
+      title: textByLang(
+        localOptions.lang,
+        `我删掉了什么：聚焦「${seed}」的取舍清单`,
+        `What I removed: trade-off list to focus on "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '展示克制与边界，建立信任。',
+        'Show restraint and boundaries to build trust.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '反思帖 + 决策树',
+        'Reflection + decision tree',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '好策略是删出来的。',
+        'Good strategy comes from subtraction.',
+      ),
     }),
   ];
 
   const p3Builders: TopicBuilder[] = [
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `7 天挑战：围绕「${seed}」每天做一件小事`, `7-day challenge: one small action per day around "${seed}"`),
-      angle: textByLang(localOptions.lang, '提高互动与参与感。', 'Increase interaction and participation.'),
-      format: textByLang(localOptions.lang, '挑战帖 + 打卡模板', 'Challenge post + check-in template'),
-      hook: textByLang(localOptions.lang, '一起做，7 天后对比变化。', 'Do it together and compare results in 7 days.'),
+      title: textByLang(
+        localOptions.lang,
+        `7 天挑战：围绕「${seed}」每天做一件小事`,
+        `7-day challenge: one small action per day around "${seed}"`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '提高互动与参与感。',
+        'Increase interaction and participation.',
+      ),
+      format: textByLang(
+        localOptions.lang,
+        '挑战帖 + 打卡模板',
+        'Challenge post + check-in template',
+      ),
+      hook: textByLang(
+        localOptions.lang,
+        '一起做，7 天后对比变化。',
+        'Do it together and compare results in 7 days.',
+      ),
     }),
     (seed, localOptions) => ({
-      title: textByLang(localOptions.lang, `共创征集：你最想看我拆哪类「${seed}」`, `Co-creation request: which "${seed}" case should I break down next?`),
-      angle: textByLang(localOptions.lang, '把评论区变成选题池。', 'Turn comments into a topic pipeline.'),
+      title: textByLang(
+        localOptions.lang,
+        `共创征集：你最想看我拆哪类「${seed}」`,
+        `Co-creation request: which "${seed}" case should I break down next?`,
+      ),
+      angle: textByLang(
+        localOptions.lang,
+        '把评论区变成选题池。',
+        'Turn comments into a topic pipeline.',
+      ),
       format: textByLang(localOptions.lang, '征集帖', 'Call-for-input post'),
-      hook: textByLang(localOptions.lang, '下一条内容由你来定。', 'You decide the next piece.'),
+      hook: textByLang(
+        localOptions.lang,
+        '下一条内容由你来定。',
+        'You decide the next piece.',
+      ),
     }),
   ];
 
@@ -716,7 +1033,11 @@ function buildTopicIdeas(
   ): void => {
     const combinations: Array<{ seed: string; builder: TopicBuilder }> = [];
     for (let seedIndex = 0; seedIndex < seeds.length; seedIndex += 1) {
-      for (let builderIndex = 0; builderIndex < builders.length; builderIndex += 1) {
+      for (
+        let builderIndex = 0;
+        builderIndex < builders.length;
+        builderIndex += 1
+      ) {
         combinations.push({
           seed: seeds[seedIndex],
           builder: builders[builderIndex],
@@ -767,7 +1088,9 @@ function buildTopicIdeas(
         continue;
       }
       const channel =
-        safeChannels[(startIndex + combinations.length + fallback) % safeChannels.length];
+        safeChannels[
+          (startIndex + combinations.length + fallback) % safeChannels.length
+        ];
       usedTitles.add(title);
       ideas.push({
         priority,
@@ -777,7 +1100,11 @@ function buildTopicIdeas(
           '补齐本轮题量，优先补充可验证步骤与边界条件。',
           'Fill backlog with verifiable steps and explicit guardrails.',
         ),
-        format: textByLang(options.lang, '执行清单 + 复盘卡', 'Execution checklist + review card'),
+        format: textByLang(
+          options.lang,
+          '执行清单 + 复盘卡',
+          'Execution checklist + review card',
+        ),
         hook: textByLang(
           options.lang,
           '这条是补位题，重点是可执行和可验证。',
@@ -795,7 +1122,10 @@ function buildTopicIdeas(
   appendIdeas('P2', quotas.p2, p2Builders, quotas.p1);
   appendIdeas('P3', quotas.p3, p3Builders, quotas.p1 + quotas.p2);
 
-  const renderIdea = (idea: TopicIdea, index: number): string => `### ${index + 1}. ${idea.title}
+  const renderIdea = (
+    idea: TopicIdea,
+    index: number,
+  ): string => `### ${index + 1}. ${idea.title}
 
 - ${textByLang(options.lang, '优先级', 'Priority')}：${idea.priority}
 - ${textByLang(options.lang, '切入角度', 'Angle')}：${idea.angle}
@@ -811,15 +1141,21 @@ function buildTopicIdeas(
 
   const renderGroup = (group: TopicIdea[]): string => {
     if (group.length === 0) {
-      return textByLang(options.lang, '- 本轮未分配该级别选题。', '- No topics allocated for this priority in this run.');
+      return textByLang(
+        options.lang,
+        '- 本轮未分配该级别选题。',
+        '- No topics allocated for this priority in this run.',
+      );
     }
     return group.map((idea, index) => renderIdea(idea, index)).join('\n');
   };
 
-  const publishingPlan = ideas.slice(0, Math.min(7, ideas.length)).map((idea, index) => {
-    const day = index + 1;
-    return `${day}. ${textByLang(options.lang, `Day ${day}：发布「${idea.title}」`, `Day ${day}: publish "${idea.title}"`)}`;
-  });
+  const publishingPlan = ideas
+    .slice(0, Math.min(7, ideas.length))
+    .map((idea, index) => {
+      const day = index + 1;
+      return `${day}. ${textByLang(options.lang, `Day ${day}：发布「${idea.title}」`, `Day ${day}: publish "${idea.title}"`)}`;
+    });
 
   return `# ${textByLang(options.lang, 'IPClaw 优质选题包', 'IPClaw High-Quality Topic Pack')}
 
@@ -969,10 +1305,10 @@ ${textByLang(options.lang, '仓库链接', 'Repo')}：${repoLink}
 ## 3) ${textByLang(options.lang, '社区讨论贴', 'Community Discussion Post')}
 
 ${textByLang(
-    options.lang,
-    `我们最近在做一个 ${options.niche} 的执行实验。当前案例是：问题「${problem}」，动作「${action}」，结果「${result}」。你最关心哪一步：定位、人设还是选题优先级？欢迎直接回复你的场景，我会补一版可执行方案。`,
-    `We are running an execution experiment around ${options.niche}. Current case: problem "${problem}", action "${action}", result "${result}". Which step matters most to you: positioning, persona, or topic prioritization? Share your context and I will propose an actionable plan.`,
-  )}
+  options.lang,
+  `我们最近在做一个 ${options.niche} 的执行实验。当前案例是：问题「${problem}」，动作「${action}」，结果「${result}」。你最关心哪一步：定位、人设还是选题优先级？欢迎直接回复你的场景，我会补一版可执行方案。`,
+  `We are running an execution experiment around ${options.niche}. Current case: problem "${problem}", action "${action}", result "${result}". Which step matters most to you: positioning, persona, or topic prioritization? Share your context and I will propose an actionable plan.`,
+)}
 
 ## 4) ${textByLang(options.lang, 'Changelog 摘要', 'Changelog Summary')}
 
@@ -1089,4 +1425,15 @@ function main(): void {
   console.log(outputDir);
 }
 
-main();
+function isExecutedDirectly(): boolean {
+  const argvScriptPath = process.argv[1];
+  if (!argvScriptPath) return false;
+  return (
+    path.resolve(argvScriptPath) ===
+    path.resolve(fileURLToPath(import.meta.url))
+  );
+}
+
+if (isExecutedDirectly()) {
+  main();
+}

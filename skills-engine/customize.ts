@@ -95,6 +95,16 @@ export function commitCustomize(): void {
     const basePath = path.join(baseDir, relativePath);
     const currentPath = path.join(cwd, relativePath);
 
+    if (fs.existsSync(basePath) && fs.existsSync(currentPath)) {
+      const baseIsDir = fs.statSync(basePath).isDirectory();
+      const currentIsDir = fs.statSync(currentPath).isDirectory();
+      if (baseIsDir !== currentIsDir) {
+        throw new Error(
+          `diff error for ${relativePath}: base and working types differ`,
+        );
+      }
+    }
+
     // Use /dev/null if either side doesn't exist
     const oldPath = fs.existsSync(basePath) ? basePath : '/dev/null';
     const newPath = fs.existsSync(currentPath) ? currentPath : '/dev/null';
@@ -102,6 +112,7 @@ export function commitCustomize(): void {
     try {
       const diff = execFileSync('diff', ['-ruN', oldPath, newPath], {
         encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       combinedPatch += diff;
     } catch (err: unknown) {
