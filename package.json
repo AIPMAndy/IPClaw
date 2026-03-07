@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "ip:run": "node --import tsx scripts/ipclaw-run.ts",
+    "ip:review": "node --import tsx scripts/ipclaw-review.ts",
     "typecheck": "tsc --noEmit",
     "lint": "npm run typecheck && npm run format:check",
     "format": "prettier --write \"scripts/**/*.ts\"",

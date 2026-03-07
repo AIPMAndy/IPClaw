@@ -32,6 +32,7 @@ npm run ip:run -- \
 - `02-persona.md`
 - `03-topic-ideas.md`
 - `04-content-pack.md`（案例驱动内容包）
+- `05-feedback-tracker.csv`（反馈追踪表，按选题逐条填报）
 
 ### 参数说明
 
@@ -53,4 +54,32 @@ npm run ip:run -- \
 
 - 先用 `--topics 12` 跑默认版本，确认语气和结构。
 - 再通过 `--focus` 与 `--case` 精细化第二版输出。
-- 最后固定每周同一时间执行一次，形成持续复盘节奏。
+- 发布后同步填写 `05-feedback-tracker.csv` 的曝光/点击/线索数据。
+- 固定每周同一时间执行一次，按数据做保留/下线/加倍投入决策。
+
+## `/ip-review`（KPI 周复盘）
+
+用途：读取 `05-feedback-tracker.csv`，自动生成 KPI 快照和 keep/drop/double-down 建议。
+
+### CLI 骨架
+
+```bash
+npm run ip:review -- \
+  --tracker plans/ipclaw-runs/<timestamp>/05-feedback-tracker.csv \
+  --out plans/ipclaw-runs/<timestamp>/06-weekly-review \
+  --format both \
+  --min-impressions 120 \
+  --strong-ctr 0.04 \
+  --weak-ctr 0.01 \
+  --lead-target 2
+```
+
+### 参数说明
+
+- `--tracker`：反馈追踪 CSV 路径（可选，默认自动读取最新 run 的 tracker）
+- `--out`：输出路径（可选；可传文件、无扩展名基名，或目录（以 `/` 结尾/已存在目录）；默认同目录下 `06-weekly-review.*`）
+- `--format`：输出格式（可选，`md`/`json`/`both`，默认 `md`）
+- `--min-impressions`：进入稳定判断所需最小曝光（默认 `120`）
+- `--strong-ctr`：加倍投入阈值 CTR（默认 `0.04`）
+- `--weak-ctr`：下线阈值 CTR（默认 `0.01`）
+- `--lead-target`：加倍投入阈值线索数（默认 `2`）

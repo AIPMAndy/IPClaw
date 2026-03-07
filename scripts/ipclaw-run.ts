@@ -19,7 +19,7 @@ interface CliOptions {
   outputDir?: string;
 }
 
-interface TopicIdea {
+export interface TopicIdea {
   priority: 'P1' | 'P2' | 'P3';
   title: string;
   angle: string;
@@ -38,6 +38,11 @@ interface TopicQuota {
   p1: number;
   p2: number;
   p3: number;
+}
+
+interface TopicIdeasResult {
+  markdown: string;
+  ideas: TopicIdea[];
 }
 
 interface CaseBrief {
@@ -196,6 +201,50 @@ function dedupe(items: string[]): string[] {
     result.push(item);
   }
   return result;
+}
+
+function escapeCsvCell(value: string): string {
+  const normalized = value.replace(/\r\n/g, '\n');
+  if (!/[",\n]/.test(normalized)) return normalized;
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+export function buildFeedbackTrackerCsv(ideas: TopicIdea[]): string {
+  const header = [
+    'topic_id',
+    'priority',
+    'title',
+    'channel',
+    'status',
+    'publish_date',
+    'impressions',
+    'clicks',
+    'ctr',
+    'leads',
+    'lead_rate',
+    'notes',
+  ].join(',');
+
+  const rows = ideas.map((idea, index) =>
+    [
+      `topic-${String(index + 1).padStart(2, '0')}`,
+      idea.priority,
+      idea.title,
+      idea.channel,
+      'planned',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]
+      .map((cell) => escapeCsvCell(cell))
+      .join(','),
+  );
+
+  return [header, ...rows].join('\n') + '\n';
 }
 
 function extractKeyPoints(sourceText: string, maxPoints = 6): string[] {
@@ -656,7 +705,7 @@ function buildTopicIdeas(
   keyPoints: string[],
   templatePath: string,
   caseBrief?: CaseBrief,
-): string {
+): TopicIdeasResult {
   const insights = extractInsights(keyPoints, 10);
   const normalizedInsights = insights
     .map((item) =>
@@ -1157,7 +1206,7 @@ function buildTopicIdeas(
       return `${day}. ${textByLang(options.lang, `Day ${day}：发布「${idea.title}」`, `Day ${day}: publish "${idea.title}"`)}`;
     });
 
-  return `# ${textByLang(options.lang, 'IPClaw 优质选题包', 'IPClaw High-Quality Topic Pack')}
+  const markdown = `# ${textByLang(options.lang, 'IPClaw 优质选题包', 'IPClaw High-Quality Topic Pack')}
 
 ## ${textByLang(options.lang, '选题策略', 'Topic Strategy')}
 
@@ -1196,6 +1245,8 @@ ${publishingPlan.join('\n')}
 - ${templatePath}
 ${options.repoUrl ? `- Repo: ${options.repoUrl}` : ''}
 `;
+
+  return { markdown, ideas };
 }
 
 function buildContentPack(
@@ -1376,6 +1427,7 @@ function main(): void {
 - 02-persona.md
 - 03-topic-ideas.md
 - 04-content-pack.md
+- 05-feedback-tracker.csv
 
 ## Auto-fill Summary
 
@@ -1388,7 +1440,8 @@ function main(): void {
 1. Review and lock positioning.
 2. Confirm primary persona and pain points.
 3. Pick top 2 P1 topics and publish.
-4. Collect feedback and refresh topic backlog.
+4. Fill feedback tracker with real metrics.
+5. Refresh topic backlog based on keep/drop/double-down decisions.
 `;
 
   const positioningContent = buildPositioningCard(
@@ -1403,24 +1456,30 @@ function main(): void {
     personaTemplatePath,
     caseBrief,
   );
-  const topicIdeasContent = buildTopicIdeas(
+  const topicIdeasResult = buildTopicIdeas(
     options,
     keyPoints,
     topicTemplatePath,
     caseBrief,
   );
+  const topicIdeasContent = topicIdeasResult.markdown;
   const contentPack = buildContentPack(
     options,
     keyPoints,
     contentTemplatePath,
     caseBrief,
   );
+  const feedbackTrackerCsv = buildFeedbackTrackerCsv(topicIdeasResult.ideas);
 
   writeFile(path.join(outputDir, 'README.md'), indexContent);
   writeFile(path.join(outputDir, '01-positioning.md'), positioningContent);
   writeFile(path.join(outputDir, '02-persona.md'), personaContent);
   writeFile(path.join(outputDir, '03-topic-ideas.md'), topicIdeasContent);
   writeFile(path.join(outputDir, '04-content-pack.md'), contentPack);
+  writeFile(
+    path.join(outputDir, '05-feedback-tracker.csv'),
+    feedbackTrackerCsv,
+  );
 
   console.log(outputDir);
 }

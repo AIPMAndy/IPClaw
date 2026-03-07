@@ -65,7 +65,16 @@ plans/ipclaw-runs/<timestamp>/
 ├── 01-positioning.md   # 定位卡
 ├── 02-persona.md       # 人设卡
 ├── 03-topic-ideas.md   # 选题包（P1/P2/P3）
-└── 04-content-pack.md  # 案例驱动内容包
+├── 04-content-pack.md  # 案例驱动内容包
+└── 05-feedback-tracker.csv # 反馈追踪表（曝光/点击/线索）
+```
+
+```bash
+# 4. 发布后生成 KPI 周复盘（默认读取最新 tracker）
+npm run ip:review
+
+# 输出 Markdown + JSON（用于自动化分析）
+npm run ip:review -- --format both
 ```
 
 **案例驱动模式（可选）：**
@@ -99,6 +108,15 @@ npm run ip:run -- \
 ### 4️⃣ 7 天发布节奏
 - 快速发布 → 收集反馈 → 迭代优化
 - 支持多渠道：GitHub、X/Twitter、微信公众号
+
+### 5️⃣ 反馈追踪闭环
+- 自动生成 `05-feedback-tracker.csv`，每条选题一行
+- 统一记录发布状态、曝光、点击、线索与转化率
+
+### 6️⃣ KPI 周复盘
+- `ip:review` 自动读取 tracker，生成 `06-weekly-review.md`
+- 支持 `--format json|both`，可输出结构化 JSON 供脚本/面板消费
+- 输出 keep / drop / double-down 建议，支持每周迭代决策
 
 ---
 
@@ -143,7 +161,7 @@ IPClaw/
 - [x] `/ip-run` MVP — 定位 + 人设 + 选题
 - [x] 多语言支持（中/英）
 - [x] 多渠道建议（GitHub/X/微信）
-- [ ] 选题效果追踪与反馈闭环
+- [x] 选题效果追踪与反馈闭环（CSV Tracker）
 - [ ] 内容模板库扩展
 - [ ] Web UI 可视化面板
 
@@ -229,6 +247,14 @@ npm run ip:run -- \
   --creator "YourName" \
   --niche "Your Niche" \
   --audience "Target Audience"
+```
+
+Generate weekly KPI review after publishing:
+```bash
+npm run ip:review
+
+# Output Markdown + JSON for automation
+npm run ip:review -- --format both
 ```
 
 Optional case-driven mode:
